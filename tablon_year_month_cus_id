@@ -125,6 +125,7 @@ GROUP BY 1,2
 )
 
 , TABLON_MES_CUST AS
+-- unifico las 4 tablas principales por distinct year_month y cus_cust_id en un tablon para posteriormente usarlo como tabla principal
 (
 SELECT DISTINCT year_month, cus_cust_id FROM LIVE_LISTING
 UNION DISTINCT
