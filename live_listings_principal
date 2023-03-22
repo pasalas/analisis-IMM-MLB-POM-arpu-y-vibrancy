@@ -1,3 +1,5 @@
+-- https://github.com/pasalas/analisis-IMM-MLB-POM-arpu-y-vibrancy
+
 DECLARE MES_DESDE DATE DEFAULT '2022-01-01'
 ;
 DECLARE MES_HASTA DATE DEFAULT '2023-02-01'
@@ -8,7 +10,7 @@ WITH EVOLUCION_ACTIVE_CUSTOMER AS
 (
 SELECT 
   DATE_TRUNC(A.fecha, MONTH) AS year_month
-, A.cus_cust_id
+, CAST(A.cus_cust_id AS STRING) AS cus_cust_id
 , A.altas_netas
 
     -- , A.sit_site_id
@@ -55,23 +57,23 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY DATE_TRUNC(A.fecha, MONTH),A.cus_cust_id
 SELECT 
   B.parent_account_name
 , B.parent_account_id
-, A.year_month
-, A.cus_cust_id
-, A.revenue_destaque
-, A.revenue_especial
-, A.revenue_publicacion
-, A.revenue_showroom
-, A.arpu_total
+, CAST(A.year_month AS DATE) AS year_month
+, CAST(A.cus_cust_id AS STRING) AS cus_cust_id
+, CAST(A.revenue_destaque AS NUMERIC) AS revenue_destaque
+, CAST(A.revenue_especial AS NUMERIC) AS revenue_especial
+, CAST(A.revenue_publicacion AS NUMERIC) AS revenue_publicacion
+, CAST(A.revenue_showroom AS NUMERIC) AS revenue_showroom
+, CAST(A.arpu_total AS NUMERIC) AS arpu_total
 , A.is_parent_id
-, (COALESCE(revenue_destaque,0)+COALESCE(revenue_especial,0)+COALESCE(revenue_publicacion,0)+COALESCE(revenue_showroom,0)) AS arpu_total_2
+, (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_especial AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS arpu_total_2
 
 
-FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet` AS A
+FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet2` AS A
 
 INNER JOIN `meli-bi-data.SBOX_DESARROLLOMKTVIS.LK_IMM_MLB_PARENT_ACCOUNT_gsheet` AS B
 ON A.is_parent_id = 'si'
 AND B.cus_cust_id IS NOT NULL
-AND A.cus_cust_id = B.cus_cust_id
+AND A.cus_cust_id = CAST(B.cus_cust_id AS STRING)
 
 )
 
@@ -79,18 +81,18 @@ AND A.cus_cust_id = B.cus_cust_id
 -- por fila trae los cus_cust_id NO asociados a una parent_id, y el revenue de cada cus_cus_id. Desgloce: mes - cus_cust_id
 (
 SELECT 
-  A.year_month
-, A.cus_cust_id
-, A.revenue_destaque
-, A.revenue_especial
-, A.revenue_publicacion
-, A.revenue_showroom
-, A.arpu_total
+  CAST(A.year_month AS DATE) AS year_month
+, CAST(A.cus_cust_id AS STRING) AS cus_cust_id
+, CAST(A.revenue_destaque AS NUMERIC) AS revenue_destaque
+, CAST(A.revenue_especial AS NUMERIC) AS revenue_especial
+, CAST(A.revenue_publicacion AS NUMERIC) AS revenue_publicacion
+, CAST(A.revenue_showroom AS NUMERIC) AS revenue_showroom
+, CAST(A.arpu_total AS NUMERIC) AS arpu_total
 , A.is_parent_id
-, (COALESCE(revenue_destaque,0)+COALESCE(revenue_especial,0)+COALESCE(revenue_publicacion,0)+COALESCE(revenue_showroom,0)) AS arpu_total_2
+, (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_especial AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS arpu_total_2
 
 
-FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet` AS A
+FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet2` AS A
 
 WHERE A.is_parent_id = 'no'
 )
