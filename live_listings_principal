@@ -68,12 +68,12 @@ SELECT
 , (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_especial AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS arpu_total_2
 
 
-FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet2` AS A
+FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet` AS A
 
 INNER JOIN `meli-bi-data.SBOX_DESARROLLOMKTVIS.LK_IMM_MLB_PARENT_ACCOUNT_gsheet` AS B
 ON A.is_parent_id = 'si'
 AND B.cus_cust_id IS NOT NULL
-AND A.cus_cust_id = CAST(B.cus_cust_id AS STRING)
+AND CAST(A.cus_cust_id AS STRING) = CAST(B.cus_cust_id AS STRING)
 
 )
 
@@ -92,7 +92,7 @@ SELECT
 , (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_especial AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS arpu_total_2
 
 
-FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet2` AS A
+FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet` AS A
 
 WHERE A.is_parent_id = 'no'
 )
