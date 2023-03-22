@@ -132,6 +132,7 @@ SELECT
   B.parent_account_id
 , B.parent_account_name
 , A.cus_cust_id
+, F.Segmento_POM_FINAL
 , A.year_month
 , A.live_listings
 , A.contactos_totales_unique
@@ -170,9 +171,9 @@ LEFT JOIN EVOLUCION_ACTIVE_CUSTOMER AS D
 ON A.cus_cust_id = CAST(D.cus_cust_id AS STRING)
 AND A.year_month = D.year_month
 
--- INNER JOIN `meli-bi-data.SBOX_MKTVIS.segmentos_POM` AS B -- base donde está la lista de cus_cust_id: https://docs.google.com/spreadsheets/d/1pKxohKdYHOMmCD4X9n-TB3-cH2uJ8HPMHTjaEb1S4-E/edit#gid=0
--- ON CAST(B.CUS_CUST_ID_SEL AS STRING) = A.CUSTOMER_SELLER_ID
--- AND A.SITE_ID = 'MLB'
+-- base donde está la lista de cus_cust_id: https://docs.google.com/spreadsheets/d/1pKxohKdYHOMmCD4X9n-TB3-cH2uJ8HPMHTjaEb1S4-E/edit#gid=0 del segmento POM
+LEFT JOIN `meli-bi-data.SBOX_MKTVIS.segmentos_POM` AS F
+ON A.cus_cust_id = CAST(F.CUS_CUST_ID_SEL AS STRING)
 
 )
 
@@ -182,6 +183,7 @@ SELECT
   parent_account_id
 , parent_account_name
 , cus_cust_id
+, segmento_POM_final
 , year_month
 , altas_netas
 , live_listings
