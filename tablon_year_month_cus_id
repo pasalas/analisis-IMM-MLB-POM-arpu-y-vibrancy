@@ -110,7 +110,7 @@ SELECT
 
     --   (CASE WHEN Segmento_POM_FINAL = 'NA' THEN 'n/a' ELSE 'foco POM' END) AS es_cliente_foco_POM
     -- , Segmento_POM_FINAL
-    -- , (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END) AS es_AyC
+    -- , CATEGORY_NAME_L2 AS es_AyC
     -- , (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END) AS es_SP
     -- , (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END) AS item_condition
     -- , (CASE WHEN B.cus_cust_id IS NULL THEN 0 ELSE 1 END) AS FILTRO_BASE
@@ -121,16 +121,16 @@ SELECT
 , SAFE_DIVIDE(SUM(CONTACTOS_TOTALES_UNIQUE) , SUM(LIVE_LISTINGS)) AS vibrancy
 , SAFE_DIVIDE(SUM(CONTACTOS_TOTALES_UNIQUE) , SUM(VISITAS_TOTAL)) AS contactos_sobre_visitas
 -- METRICAS DE AYC USADOS SP
-, SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,LIVE_LISTINGS, NULL)) AS live_listings_foco_POM
+, SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,LIVE_LISTINGS, NULL)) AS live_listings_foco_POM
 
-, SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) AS contactos_totales_unique_foco_POM
+, SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) AS contactos_totales_unique_foco_POM
 
-, SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,VISITAS_TOTAL, NULL)) AS visitas_totales_foco_POM
+, SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,VISITAS_TOTAL, NULL)) AS visitas_totales_foco_POM
 
-, SAFE_DIVIDE(SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,LIVE_LISTINGS, NULL))) AS vibrancy_foco_POM
+, SAFE_DIVIDE(SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,LIVE_LISTINGS, NULL))) AS vibrancy_foco_POM
 
 
-, SAFE_DIVIDE(SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE CATEGORY_NAME_L2 END)='Carros e Caminhonetes' AND (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END)= 'SP' AND (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END)= 'Usado' ,VISITAS_TOTAL, NULL))) AS contactos_sobre_visitas_foco_POM
+, SAFE_DIVIDE(SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,VISITAS_TOTAL, NULL))) AS contactos_sobre_visitas_foco_POM
 
 FROM `meli-bi-data.SBOX_MKTVIS.DASH_MOTORS_VIBRANCY` AS A
 
