@@ -1,8 +1,8 @@
 -- https://github.com/pasalas/analisis-IMM-MLB-POM-arpu-y-vibrancy
 
-DECLARE MES_DESDE DATE DEFAULT '2022-01-01'
+DECLARE MES_DESDE DATE DEFAULT '2023-03-01'
 ;
-DECLARE MES_HASTA DATE DEFAULT '2023-02-01'
+DECLARE MES_HASTA DATE DEFAULT '2023-04-01'
 ;
 
 WITH EVOLUCION_ACTIVE_CUSTOMER AS
@@ -50,22 +50,21 @@ and PACKAGE_DESC NOT IN ('Todo o seu estoque Free')
 QUALIFY ROW_NUMBER() OVER (PARTITION BY DATE_TRUNC(A.fecha, MONTH),A.cus_cust_id ORDER BY A.fecha DESC) = 1
 ) 
 
-
-, EVOLUCION_CARGOS_PARENT_ID AS
--- por fila trae los cus_cust_id asociados a una parent_id, y el revenue de la parent_id. Desgloce: mes - cus_cust_id
+-- NUEVO
+, EVOLUCION_REESTRUCTURACION AS
 (
+
 SELECT 
   B.parent_account_name
 , B.parent_account_id
 , CAST(A.year_month AS DATE) AS year_month
-, CAST(A.cus_cust_id AS STRING) AS cus_cust_id
-, CAST(A.revenue_destaque AS NUMERIC) AS revenue_destaque
-, CAST(A.revenue_especial AS NUMERIC) AS revenue_especial
-, CAST(A.revenue_publicacion AS NUMERIC) AS revenue_publicacion
-, CAST(A.revenue_showroom AS NUMERIC) AS revenue_showroom
-, CAST(A.arpu_total AS NUMERIC) AS arpu_total
-, A.is_parent_id
-, (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_especial AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS arpu_total_2
+
+, SUM(CAST(A.revenue_destaque AS NUMERIC)) AS parent_id_revenue_destaque
+, SUM(CAST(A.revenue_especial AS NUMERIC)) AS parent_id_revenue_especial
+, SUM(CAST(A.revenue_publicacion AS NUMERIC)) AS parent_id_revenue_publicacion
+, SUM(CAST(A.revenue_showroom AS NUMERIC)) AS parent_id_revenue_showroom
+, SUM(CAST(A.arpu_total AS NUMERIC)) AS parent_id_arpu_total
+, SUM((COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0))) AS parent_id_arpu_performance
 
 
 FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet` AS A
@@ -75,27 +74,46 @@ ON A.is_parent_id = 'si'
 AND B.cus_cust_id IS NOT NULL
 AND CAST(A.cus_cust_id AS STRING) = CAST(B.cus_cust_id AS STRING)
 
+GROUP BY 1,2,3
 
 )
 
-, EVOLUCION_CUS_CUST_ID AS 
+, EVOLUCION_CARGOS AS 
 -- por fila trae los cus_cust_id NO asociados a una parent_id, y el revenue de cada cus_cus_id. Desgloce: mes - cus_cust_id
 (
 SELECT 
-  CAST(A.year_month AS DATE) AS year_month
+  B.parent_account_name
+, B.parent_account_id
+, CAST(A.year_month AS DATE) AS year_month
 , CAST(A.cus_cust_id AS STRING) AS cus_cust_id
-, CAST(A.revenue_destaque AS NUMERIC) AS revenue_destaque
-, CAST(A.revenue_especial AS NUMERIC) AS revenue_especial
-, CAST(A.revenue_publicacion AS NUMERIC) AS revenue_publicacion
-, CAST(A.revenue_showroom AS NUMERIC) AS revenue_showroom
-, CAST(A.arpu_total AS NUMERIC) AS arpu_total
-, A.is_parent_id
-, (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_especial AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS arpu_total_2
+, CAST(A.revenue_destaque AS NUMERIC) AS cust_id_revenue_destaque
+, CAST(A.revenue_especial AS NUMERIC) AS cust_id_revenue_especial
+, CAST(A.revenue_publicacion AS NUMERIC) AS cust_id_revenue_publicacion
+, CAST(A.revenue_showroom AS NUMERIC) AS cust_id_revenue_showroom
+, CAST(A.arpu_total AS NUMERIC) AS cust_id_arpu_total
+, (COALESCE(CAST(A.revenue_destaque AS NUMERIC),0)+COALESCE(CAST(A.revenue_publicacion AS NUMERIC),0)+COALESCE(CAST(A.revenue_showroom AS NUMERIC),0)) AS cust_id_arpu_performance
+
+-- NUEVO
+, C.parent_id_revenue_destaque
+, C.parent_id_revenue_especial
+, C.parent_id_revenue_publicacion
+, C.parent_id_revenue_showroom
+, C.parent_id_arpu_total
+, C.parent_id_arpu_performance
 
 
 FROM `meli-bi-data.SBOX_DESARROLLOMKTVIS.IMM_MLB_EVOLUCION_CARGOS_gsheet` AS A
+--150425
 
-WHERE A.is_parent_id = 'no'
+LEFT JOIN `meli-bi-data.SBOX_DESARROLLOMKTVIS.LK_IMM_MLB_PARENT_ACCOUNT_gsheet` AS B
+ON A.is_parent_id = 'si'
+AND B.cus_cust_id IS NOT NULL
+AND CAST(A.cus_cust_id AS STRING) = CAST(B.cus_cust_id AS STRING)
+
+-- NUEVO
+LEFT JOIN EVOLUCION_REESTRUCTURACION AS C
+ON B.parent_account_name = C.parent_account_name
+AND A.year_month = C.year_month
 )
 
 
@@ -107,13 +125,6 @@ SELECT
   B.parent_account_id
 , B.parent_account_name
 , CAST(A.CUSTOMER_SELLER_ID AS STRING) AS cus_cust_id
-
-    --   (CASE WHEN Segmento_POM_FINAL = 'NA' THEN 'n/a' ELSE 'foco POM' END) AS es_cliente_foco_POM
-    -- , Segmento_POM_FINAL
-    -- , CATEGORY_NAME_L2 AS es_AyC
-    -- , (CASE WHEN ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') THEN 'SP' ELSE 'Other' END) AS es_SP
-    -- , (CASE WHEN CATEGORY_NAME_L2 NOT IN ('Carros e Caminhonetes') THEN 'Other' ELSE ITEM_CONDITION END) AS item_condition
-    -- , (CASE WHEN B.cus_cust_id IS NULL THEN 0 ELSE 1 END) AS FILTRO_BASE
 , A.year_month
 , SUM(LIVE_LISTINGS) AS live_listings
 , SUM(CONTACTOS_TOTALES_UNIQUE) AS contactos_totales_unique
@@ -132,11 +143,24 @@ SELECT
 
 , SAFE_DIVIDE(SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' ,VISITAS_TOTAL, NULL))) AS contactos_sobre_visitas_foco_POM
 
+-- METRICAS B2C: DE AYC USADOS SP VEHICLE_YEAR >= 2010 PRICE <= 150.000
+, SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,LIVE_LISTINGS, NULL)) AS live_listings_foco_B2C_POM
+
+, SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,CONTACTOS_TOTALES_UNIQUE, NULL)) AS contactos_totales_unique_foco_B2C_POM
+
+, SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,VISITAS_TOTAL, NULL)) AS visitas_totales_foco_B2C_POM
+
+, SAFE_DIVIDE(SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,LIVE_LISTINGS, NULL))) AS vibrancy_foco_B2C_POM
+
+
+, SAFE_DIVIDE(SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,CONTACTOS_TOTALES_UNIQUE, NULL)) , SUM(IF( (CATEGORY_NAME_L2='Carros e Caminhonetes' AND ITEM_STATE IN ('BR-SP','S?o Paulo','SP','São Paulo','São') AND ITEM_CONDITION='Usado' AND VEHICLE_YEAR >= 2010 AND ITEM_LOCAL_PRICE <= 150000) ,VISITAS_TOTAL, NULL))) AS contactos_sobre_visitas_foco_B2C_POM
+
 FROM `meli-bi-data.SBOX_MKTVIS.DASH_MOTORS_VIBRANCY` AS A
 
 LEFT JOIN `meli-bi-data.SBOX_DESARROLLOMKTVIS.LK_IMM_MLB_PARENT_ACCOUNT_gsheet` AS B
 ON B.cus_cust_id IS NOT NULL
 AND CAST(A.CUSTOMER_SELLER_ID AS STRING) = CAST(B.cus_cust_id AS STRING)
+
 
 WHERE SITE_ID = 'MLB'
 AND A.year_month BETWEEN MES_DESDE AND MES_HASTA
@@ -149,9 +173,7 @@ GROUP BY 1,2,3,4
 (
 SELECT DISTINCT year_month, cus_cust_id FROM LIVE_LISTING -- informacion de live listing
 UNION DISTINCT
-SELECT DISTINCT year_month, cus_cust_id FROM EVOLUCION_CARGOS_PARENT_ID -- cargos de parent id
-UNION DISTINCT
-SELECT DISTINCT year_month, cus_cust_id FROM EVOLUCION_CUS_CUST_ID -- cargos de cus_id
+SELECT DISTINCT year_month, cus_cust_id FROM EVOLUCION_CARGOS -- cargos de cus_id
 UNION DISTINCT
 SELECT DISTINCT year_month, cus_cust_id FROM EVOLUCION_ACTIVE_CUSTOMER -- altas bajas etc
 
@@ -160,8 +182,8 @@ SELECT DISTINCT year_month, cus_cust_id FROM EVOLUCION_ACTIVE_CUSTOMER -- altas 
 , UNIFICACION AS
 (
 SELECT 
-  B.parent_account_id
-, B.parent_account_name
+  C.parent_account_id
+, C.parent_account_name
 , A.cus_cust_id
 , F.Segmento_POM_FINAL
 , A.year_month
@@ -178,29 +200,35 @@ SELECT
 , E.visitas_totales_foco_POM
 , E.vibrancy_foco_POM
 , E.contactos_sobre_visitas_foco_POM
+-- METRICAS por cus_cust_id foco B2C POM
+, E.live_listings_foco_B2C_POM
+, E.contactos_totales_unique_foco_B2C_POM
+, E.visitas_totales_foco_B2C_POM
+, E.vibrancy_foco_B2C_POM
+, E.contactos_sobre_visitas_foco_B2C_POM
 
 , D.altas_netas
-, B.revenue_destaque
-, B.revenue_especial
-, B.revenue_publicacion
-, B.revenue_showroom
-, B.arpu_total
-, B.arpu_total_2
-, IF(B.parent_account_id IS NULL,1, SAFE_DIVIDE( SUM(live_listings) OVER (PARTITION BY E.year_month,E.cus_cust_id) , SUM(live_listings) OVER (PARTITION BY E.year_month,E.parent_account_id) ) ) AS denom_perc_live_listing_arpu_parent_id
 
-, C.revenue_especial AS cust_id_revenue_especial
-, C.revenue_publicacion AS cust_id_revenue_publicacion
-, C.revenue_showroom AS cust_id_revenue_showroom
-, C.arpu_total AS cust_id_arpu_total
-, C.arpu_total_2 AS cust_id_arpu_total_2
+, IF(C.parent_account_id IS NULL,1, SAFE_DIVIDE( SUM(live_listings) OVER (PARTITION BY A.year_month,A.cus_cust_id) , SUM(live_listings) OVER (PARTITION BY A.year_month,C.parent_account_id) ) ) AS denom_perc_live_listing_arpu_parent_id
+
+, C.cust_id_revenue_especial
+, C.cust_id_revenue_publicacion
+, C.cust_id_revenue_showroom
+, C.cust_id_arpu_total
+, C.cust_id_arpu_performance
+
+-- NUEVO
+, C.parent_id_revenue_destaque
+, C.parent_id_revenue_especial
+, C.parent_id_revenue_publicacion
+, C.parent_id_revenue_showroom
+, C.parent_id_arpu_total
+, C.parent_id_arpu_performance
+
 
 FROM TABLON_MES_CUST AS A
 
-FULL JOIN EVOLUCION_CARGOS_PARENT_ID AS B
-ON A.cus_cust_id = B.cus_cust_id
-AND A.year_month = B.year_month
-
-FULL JOIN EVOLUCION_CUS_CUST_ID AS C
+FULL JOIN EVOLUCION_CARGOS AS C
 ON A.cus_cust_id = C.cus_cust_id
 AND A.year_month = C.year_month
 
@@ -218,21 +246,12 @@ LEFT JOIN `meli-bi-data.SBOX_MKTVIS.segmentos_POM` AS F
 ON A.cus_cust_id = CAST(F.CUS_CUST_ID_SEL AS STRING)
 )
 
-, CREO_ARPU_PONDERADO AS
-(
+
 SELECT
-  A.*
-, SAFE_MULTIPLY(arpu_total     , denom_perc_live_listing_arpu_parent_id) AS arpu_ponderado
-, SAFE_MULTIPLY(arpu_total_2   , denom_perc_live_listing_arpu_parent_id) AS arpu_ponderado_2
+  A.* EXCEPT(parent_id_revenue_destaque, parent_id_revenue_especial, parent_id_revenue_publicacion, parent_id_revenue_showroom, cust_id_revenue_especial, cust_id_revenue_publicacion, cust_id_revenue_showroom)
+
+, SAFE_MULTIPLY(parent_id_arpu_total     , denom_perc_live_listing_arpu_parent_id) AS parent_id_arpu_ponderado
+, SAFE_MULTIPLY(parent_id_arpu_performance   , denom_perc_live_listing_arpu_parent_id) AS parent_id_arpu_performance_ponderado
 
 
 FROM UNIFICACION AS A
-)
-
-SELECT
-  A.*
-, (COALESCE(arpu_ponderado,0) + COALESCE(cust_id_arpu_total,0))   AS TOTAL_arpu_ponderado
-, (COALESCE(arpu_ponderado_2,0) + COALESCE(cust_id_arpu_total_2,0)) AS TOTAL_arpu_ponderado_2
-
-
-FROM CREO_ARPU_PONDERADO AS A
