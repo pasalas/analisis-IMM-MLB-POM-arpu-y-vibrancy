@@ -74,6 +74,8 @@ ON A.is_parent_id = 'si'
 AND B.cus_cust_id IS NOT NULL
 AND CAST(A.cus_cust_id AS STRING) = CAST(B.cus_cust_id AS STRING)
 
+WHERE CAST(A.year_month AS DATE) BETWEEN MES_DESDE AND MES_HASTA
+
 GROUP BY 1,2,3
 
 )
@@ -114,6 +116,8 @@ AND CAST(A.cus_cust_id AS STRING) = CAST(B.cus_cust_id AS STRING)
 LEFT JOIN EVOLUCION_REESTRUCTURACION AS C
 ON B.parent_account_name = C.parent_account_name
 AND A.year_month = C.year_month
+
+WHERE CAST(A.year_month AS DATE) BETWEEN MES_DESDE AND MES_HASTA
 )
 
 
